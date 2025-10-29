@@ -16,8 +16,8 @@ void kernel_main(void) {
     vga[i] = 0x0F00;
   }
 
-  write_string(vga, 0, "Hello World");
-  write_string(vga, 2, "Press Enter to exit kernel");
+  write_string(vga, 0, "The worst kernel to ever exist!");
+  write_string(vga, 2, "Press Enter to exit.");
 
   idt_init();
   keyboard_init();

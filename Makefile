@@ -3,21 +3,22 @@ ASM = nasm
 LD = ld
 DD = dd
 
-CFLAGS = -m64 -march=x86-64 -ffreestanding -nostdlib -Wall -Wextra -O2
+CFLAGS = -m64 -march=x86-64 -ffreestanding -nostdlib -Wall -Wextra -O2 -I$(SRC_DIR)
 ASMFLAGS = -f elf64
 BOOT_ASMFLAGS = -f bin
 LDFLAGS = -m elf_x86_64 -T linker.ld -nostdlib
 BUILD_DIR = build
+SRC_DIR = src
 
-BOOTLOADER_SOURCE = boot.asm
-KERNEL_ENTRY_SOURCE = kernel_entry.asm
-KERNEL_ASM_SOURCES = idt_asm.asm
-C_SOURCES = kernel.c vga.c idt.c keyboard.c
+BOOTLOADER_SOURCE = $(SRC_DIR)/boot.asm
+KERNEL_ENTRY_SOURCE = $(SRC_DIR)/kernel_entry.asm
+KERNEL_ASM_SOURCES = $(SRC_DIR)/idt_asm.asm
+C_SOURCES = $(SRC_DIR)/kernel.c $(SRC_DIR)/vga.c $(SRC_DIR)/idt.c $(SRC_DIR)/keyboard.c
 
 BOOTLOADER = $(BUILD_DIR)/boot.bin
 KERNEL_ENTRY_OBJECT = $(BUILD_DIR)/kernel_entry.o
-KERNEL_ASM_OBJECTS = $(KERNEL_ASM_SOURCES:%.asm=$(BUILD_DIR)/%.o)
-C_OBJECTS = $(C_SOURCES:%.c=$(BUILD_DIR)/%.o)
+KERNEL_ASM_OBJECTS = $(KERNEL_ASM_SOURCES:$(SRC_DIR)/%.asm=$(BUILD_DIR)/%.o)
+C_OBJECTS = $(C_SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 KERNEL_OBJECTS = $(KERNEL_ENTRY_OBJECT) $(KERNEL_ASM_OBJECTS) $(C_OBJECTS)
 KERNEL = $(BUILD_DIR)/kernel.bin
 DISK_IMAGE = $(BUILD_DIR)/kernel.img
@@ -35,10 +36,10 @@ $(BOOTLOADER): $(BOOTLOADER_SOURCE) | $(BUILD_DIR)
 $(KERNEL_ENTRY_OBJECT): $(KERNEL_ENTRY_SOURCE) | $(BUILD_DIR)
 	$(ASM) $(ASMFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: %.asm | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm | $(BUILD_DIR)
 	$(ASM) $(ASMFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
@@ -60,8 +61,8 @@ run: $(DISK_IMAGE)
 	qemu-system-x86_64 -fda $(DISK_IMAGE) -device isa-debug-exit,iobase=0x604,iosize=0x1
 
 format:
-	clang-format -i *.c *.h
-	$(HOME)/go/bin/asmfmt -w *.asm 2>/dev/null || true
+	clang-format -i $(SRC_DIR)/*.c $(SRC_DIR)/*.h
+	$(HOME)/go/bin/asmfmt -w $(SRC_DIR)/*.asm 2>/dev/null || true
 
 clean:
 	rm -rf $(BUILD_DIR)
