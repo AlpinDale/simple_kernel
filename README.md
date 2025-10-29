@@ -8,6 +8,7 @@ sudo pacman -S base-devel nasm qemu
 ```
 
 ```bash
+make test
 make run
 ```
 

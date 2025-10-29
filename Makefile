@@ -9,6 +9,7 @@ BOOT_ASMFLAGS = -f bin
 LDFLAGS = -m elf_x86_64 -T linker.ld -nostdlib
 BUILD_DIR = build
 SRC_DIR = src
+TESTS_DIR = tests
 
 BOOTLOADER_SOURCE = $(SRC_DIR)/boot.asm
 KERNEL_ENTRY_SOURCE = $(SRC_DIR)/kernel_entry.asm
@@ -23,7 +24,7 @@ KERNEL_OBJECTS = $(KERNEL_ENTRY_OBJECT) $(KERNEL_ASM_OBJECTS) $(C_OBJECTS)
 KERNEL = $(BUILD_DIR)/kernel.bin
 DISK_IMAGE = $(BUILD_DIR)/kernel.img
 
-.PHONY: all clean run format
+.PHONY: all clean run format test test-unit test-integration
 
 all: $(DISK_IMAGE)
 
@@ -61,8 +62,21 @@ run: $(DISK_IMAGE)
 	qemu-system-x86_64 -fda $(DISK_IMAGE) -device isa-debug-exit,iobase=0x604,iosize=0x1
 
 format:
-	clang-format -i $(SRC_DIR)/*.c $(SRC_DIR)/*.h
+	clang-format -i $(SRC_DIR)/*.c $(SRC_DIR)/*.h $(TESTS_DIR)/*.h $(TESTS_DIR)/unit/*.c
 	$(HOME)/go/bin/asmfmt -w $(SRC_DIR)/*.asm 2>/dev/null || true
+
+test: test-unit test-integration
+
+test-unit: | $(BUILD_DIR)
+	@echo "=== Running Unit Tests ==="
+	@gcc $(TESTS_DIR)/unit/test_vga.c -o build/test_vga && ./build/test_vga
+	@gcc $(TESTS_DIR)/unit/test_idt.c -o build/test_idt && ./build/test_idt
+	@gcc $(TESTS_DIR)/unit/test_keyboard.c -o build/test_keyboard && ./build/test_keyboard
+
+test-integration: $(DISK_IMAGE)
+	@echo "\n=== Running Integration Tests ==="
+	@./$(TESTS_DIR)/integration/test_boot.sh
+	@./$(TESTS_DIR)/integration/test_keyboard_input.sh
 
 clean:
 	rm -rf $(BUILD_DIR)

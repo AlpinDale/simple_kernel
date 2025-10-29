@@ -22,4 +22,3 @@ SECTIONS {
     _bss_end = .;
   }
 }
-

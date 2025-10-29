@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm gcc binutils qemu-system-x86
+
+      - name: Build kernel
+        run: make
+
+      - name: Run unit tests
+        run: make test-unit
+
+      - name: Run integration tests
+        run: make test-integration
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "Build completed"
+          echo "Unit tests completed"
+          echo "Integration tests completed"
