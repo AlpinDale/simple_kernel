@@ -13,8 +13,8 @@ TESTS_DIR = tests
 
 BOOTLOADER_SOURCE = $(SRC_DIR)/boot.asm
 KERNEL_ENTRY_SOURCE = $(SRC_DIR)/kernel_entry.asm
-KERNEL_ASM_SOURCES = $(SRC_DIR)/idt_asm.asm
-C_SOURCES = $(SRC_DIR)/kernel.c $(SRC_DIR)/vga.c $(SRC_DIR)/idt.c $(SRC_DIR)/keyboard.c $(SRC_DIR)/kprint.c $(SRC_DIR)/shell.c
+KERNEL_ASM_SOURCES = $(SRC_DIR)/idt_asm.asm $(SRC_DIR)/system_asm.asm
+C_SOURCES = $(SRC_DIR)/kernel.c $(SRC_DIR)/vga.c $(SRC_DIR)/idt.c $(SRC_DIR)/keyboard.c $(SRC_DIR)/kprint.c $(SRC_DIR)/shell.c $(SRC_DIR)/system.c
 
 BOOTLOADER = $(BUILD_DIR)/boot.bin
 KERNEL_ENTRY_OBJECT = $(BUILD_DIR)/kernel_entry.o

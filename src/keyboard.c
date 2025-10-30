@@ -105,7 +105,7 @@ void keyboard_init(void) {
   outb(PIC2_DATA, 0x02);
   outb(PIC1_DATA, 0x01);
   outb(PIC2_DATA, 0x01);
-  outb(PIC1_DATA, 0xFD);
+  outb(PIC1_DATA, 0xFC); // IRQ0 (timer) and IRQ1 (keyboard)
   outb(PIC2_DATA, 0xFF);
 
   extern void keyboard_handler_asm(void);

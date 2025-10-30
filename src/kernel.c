@@ -1,12 +1,14 @@
 #include "idt.h"
 #include "keyboard.h"
 #include "shell.h"
+#include "system.h"
 #include "vga.h"
 
 void kernel_main(void) {
   vga_initialize();
   idt_init();
   keyboard_init();
+  system_init_timer();
 
   __asm__ volatile("sti");
 

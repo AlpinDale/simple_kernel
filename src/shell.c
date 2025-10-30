@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "keyboard.h"
 #include "kprint.h"
+#include "system.h"
 #include "vga.h"
 
 #define CMD_BUFFER_SIZE 256
@@ -53,6 +54,10 @@ static void cmd_help(void) {
   kprint("  echo     - Print text\n");
   kprint("  color    - Change text color\n");
   kprint("  rainbow  - Rainbow text demo\n");
+  kprint("  version  - Show kernel version\n");
+  kprint("  uptime   - Show system uptime\n");
+  kprint("  reboot   - Reboot the system\n");
+  kprint("  halt     - Halt the system\n");
   kprint("  exit     - Exit the shell\n");
 }
 
@@ -119,6 +124,79 @@ static void cmd_rainbow(char **args, int argc) {
   }
 }
 
+static void cmd_version(void) {
+  kprint("Kernel version: ");
+  kprint(KERNEL_VERSION);
+  kprint("\n");
+  kprint("Built with: GCC + NASM\n");
+  kprint("Architecture: x86_64\n");
+}
+
+static void cmd_uptime(void) {
+  u64 uptime_ms = system_get_uptime_ms();
+  u64 seconds = uptime_ms / 1000;
+  u64 minutes = seconds / 60;
+  u64 hours = minutes / 60;
+
+  seconds %= 60;
+  minutes %= 60;
+
+  kprint("Uptime: ");
+
+  if (hours > 0) {
+    char h_str[20];
+    int i = 0;
+    u64 h = hours;
+    do {
+      h_str[i++] = '0' + (h % 10);
+      h /= 10;
+    } while (h > 0);
+    for (int j = i - 1; j >= 0; j--) {
+      char c[2] = {h_str[j], '\0'};
+      kprint(c);
+    }
+    kprint("h ");
+  }
+
+  if (minutes > 0 || hours > 0) {
+    char m_str[20];
+    int i = 0;
+    u64 m = minutes;
+    do {
+      m_str[i++] = '0' + (m % 10);
+      m /= 10;
+    } while (m > 0);
+    for (int j = i - 1; j >= 0; j--) {
+      char c[2] = {m_str[j], '\0'};
+      kprint(c);
+    }
+    kprint("m ");
+  }
+
+  char s_str[20];
+  int i = 0;
+  u64 s = seconds;
+  do {
+    s_str[i++] = '0' + (s % 10);
+    s /= 10;
+  } while (s > 0);
+  for (int j = i - 1; j >= 0; j--) {
+    char c[2] = {s_str[j], '\0'};
+    kprint(c);
+  }
+  kprint("s\n");
+}
+
+static void cmd_reboot(void) {
+  kprint_colored("Rebooting system...\n", VGA_COLOR_YELLOW, VGA_COLOR_BLACK);
+  system_reboot();
+}
+
+static void cmd_halt(void) {
+  kprint_colored("System halted.\n", VGA_COLOR_RED, VGA_COLOR_BLACK);
+  system_halt();
+}
+
 static int execute_command(char *cmd, char **args, int argc) {
   if (cmd[0] == '\0') {
     return 0;
@@ -132,8 +210,16 @@ static int execute_command(char *cmd, char **args, int argc) {
     cmd_echo(args, argc);
   else if (cmd[0] == 'c' && cmd[1] == 'o')
     cmd_color(args, argc);
-  else if (cmd[0] == 'r')
+  else if (cmd[0] == 'r' && cmd[1] == 'a')
     cmd_rainbow(args, argc);
+  else if (cmd[0] == 'v')
+    cmd_version();
+  else if (cmd[0] == 'u')
+    cmd_uptime();
+  else if (cmd[0] == 'r' && cmd[1] == 'e')
+    cmd_reboot();
+  else if (cmd[0] == 'h' && cmd[1] == 'a')
+    cmd_halt();
   else if (cmd[0] == 'e' && cmd[1] == 'x')
     return 1;
   else {
