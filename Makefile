@@ -14,7 +14,7 @@ TESTS_DIR = tests
 BOOTLOADER_SOURCE = $(SRC_DIR)/boot.asm
 KERNEL_ENTRY_SOURCE = $(SRC_DIR)/kernel_entry.asm
 KERNEL_ASM_SOURCES = $(SRC_DIR)/idt_asm.asm
-C_SOURCES = $(SRC_DIR)/kernel.c $(SRC_DIR)/vga.c $(SRC_DIR)/idt.c $(SRC_DIR)/keyboard.c $(SRC_DIR)/kprint.c
+C_SOURCES = $(SRC_DIR)/kernel.c $(SRC_DIR)/vga.c $(SRC_DIR)/idt.c $(SRC_DIR)/keyboard.c $(SRC_DIR)/kprint.c $(SRC_DIR)/shell.c
 
 BOOTLOADER = $(BUILD_DIR)/boot.bin
 KERNEL_ENTRY_OBJECT = $(BUILD_DIR)/kernel_entry.o
@@ -73,6 +73,8 @@ test-unit: | $(BUILD_DIR)
 	@gcc $(TESTS_DIR)/unit/test_vga_driver.c -o build/test_vga_driver && ./build/test_vga_driver
 	@gcc $(TESTS_DIR)/unit/test_idt.c -o build/test_idt && ./build/test_idt
 	@gcc $(TESTS_DIR)/unit/test_keyboard.c -o build/test_keyboard && ./build/test_keyboard
+	@gcc $(TESTS_DIR)/unit/test_keyboard_map.c -o build/test_keyboard_map && ./build/test_keyboard_map
+	@gcc $(TESTS_DIR)/unit/test_shell_parser.c -o build/test_shell_parser && ./build/test_shell_parser
 
 test-integration: $(DISK_IMAGE)
 	@echo "\n=== Running Integration Tests ==="

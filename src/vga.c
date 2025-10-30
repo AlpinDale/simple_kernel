@@ -5,11 +5,24 @@ static size_t terminal_column;
 static u8 terminal_color;
 static u16 *terminal_buffer;
 
+static inline void outb(u16 port, u8 value) {
+  __asm__ volatile("outb %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static void update_cursor(void) {
+  u16 pos = terminal_row * VGA_WIDTH + terminal_column;
+  outb(0x3D4, 0x0F);
+  outb(0x3D5, (u8)(pos & 0xFF));
+  outb(0x3D4, 0x0E);
+  outb(0x3D5, (u8)((pos >> 8) & 0xFF));
+}
+
 void vga_initialize(void) {
   terminal_row = 0;
   terminal_column = 0;
   terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
   terminal_buffer = (u16 *)VGA_MEMORY;
+  update_cursor();
 }
 
 void vga_setcolor(u8 color) { terminal_color = color; }
@@ -25,6 +38,16 @@ void vga_putchar(char c) {
     if (++terminal_row == VGA_HEIGHT) {
       terminal_row = 0;
     }
+    update_cursor();
+    return;
+  }
+
+  if (c == '\b') {
+    if (terminal_column > 0) {
+      terminal_column--;
+      vga_putentryat(' ', terminal_color, terminal_column, terminal_row);
+    }
+    update_cursor();
     return;
   }
 
@@ -36,6 +59,8 @@ void vga_putchar(char c) {
       terminal_row = 0;
     }
   }
+
+  update_cursor();
 }
 
 void vga_write(const char *data, size_t size) {
@@ -55,7 +80,6 @@ void vga_writestring(const char *data) {
 void vga_clear(void) {
   u16 blank = vga_entry(' ', terminal_color);
 
-  // Use rep stosw for fast memory fill
   __asm__ volatile("cld\n\t"
                    "rep stosw"
                    : "=D"(terminal_buffer), "=c"(blank)
@@ -65,4 +89,5 @@ void vga_clear(void) {
 
   terminal_row = 0;
   terminal_column = 0;
+  update_cursor();
 }

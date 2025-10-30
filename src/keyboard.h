@@ -3,12 +3,18 @@
 
 #include "types.h"
 
-#define KEYBOARD_DATA_PORT 0x60
-#define KEYBOARD_STATUS_PORT 0x64
-#define ENTER_SCANCODE 0x1C
+#define INPUT_BUFFER_SIZE 256
+
+typedef struct {
+  char buffer[INPUT_BUFFER_SIZE];
+  u16 length;
+  u8 shift_pressed;
+} keyboard_state_t;
 
 void keyboard_init(void);
 void keyboard_handler(void);
-bool keyboard_should_exit(void);
+char keyboard_getchar(void);
+u8 keyboard_has_input(void);
+void keyboard_get_line(char *buffer, u16 max_len);
 
-#endif // KEYBOARD_H
+#endif
