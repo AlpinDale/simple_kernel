@@ -1,5 +1,6 @@
 #include "idt.h"
 #include "keyboard.h"
+#include "kprint.h"
 #include "vga.h"
 
 void kernel_main(void) {
@@ -11,10 +12,10 @@ void kernel_main(void) {
 
   vga_initialize();
 
-  vga_setcolor(vga_entry_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-
-  vga_writestring("The worst kernel to ever exist!\n\n");
-  vga_writestring("Press Enter to exit.");
+  kprint_rainbow("The worst kernel to ever exist!\n\n");
+  kprint("Normal text.\n\n");
+  kprint_colored("Press Enter to exit.", VGA_COLOR_LIGHT_GREEN,
+                 VGA_COLOR_BLACK);
 
   idt_init();
   keyboard_init();
@@ -25,7 +26,7 @@ void kernel_main(void) {
     __asm__ volatile("hlt");
   }
 
-  vga_writestring("\n\nExiting kernel...");
+  kprint_colored("\n\nExiting kernel...", VGA_COLOR_YELLOW, VGA_COLOR_BLACK);
 
   __asm__ volatile("outw %0, %1"
                    :

@@ -3,7 +3,7 @@ ASM = nasm
 LD = ld
 DD = dd
 
-CFLAGS = -m64 -march=x86-64 -ffreestanding -nostdlib -Wall -Wextra -O2 -I$(SRC_DIR)
+CFLAGS = -m64 -march=x86-64 -ffreestanding -nostdlib -Wall -Wextra -O2 -I$(SRC_DIR) -fno-stack-protector
 ASMFLAGS = -f elf64
 BOOT_ASMFLAGS = -f bin
 LDFLAGS = -m elf_x86_64 -T linker.ld -nostdlib
@@ -14,7 +14,7 @@ TESTS_DIR = tests
 BOOTLOADER_SOURCE = $(SRC_DIR)/boot.asm
 KERNEL_ENTRY_SOURCE = $(SRC_DIR)/kernel_entry.asm
 KERNEL_ASM_SOURCES = $(SRC_DIR)/idt_asm.asm
-C_SOURCES = $(SRC_DIR)/kernel.c $(SRC_DIR)/vga.c $(SRC_DIR)/idt.c $(SRC_DIR)/keyboard.c
+C_SOURCES = $(SRC_DIR)/kernel.c $(SRC_DIR)/vga.c $(SRC_DIR)/idt.c $(SRC_DIR)/keyboard.c $(SRC_DIR)/kprint.c
 
 BOOTLOADER = $(BUILD_DIR)/boot.bin
 KERNEL_ENTRY_OBJECT = $(BUILD_DIR)/kernel_entry.o
