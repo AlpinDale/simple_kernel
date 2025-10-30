@@ -1,23 +1,20 @@
 #include "idt.h"
 #include "keyboard.h"
-
-static void write_string(volatile unsigned short *vga, int row,
-                         const char *msg) {
-  int offset = row * 80;
-  for (int i = 0; msg[i] != '\0'; i++) {
-    vga[offset + i] = 0x0F00 | msg[i];
-  }
-}
+#include "vga.h"
 
 void kernel_main(void) {
   volatile unsigned short *vga = (volatile unsigned short *)0xB8000;
 
   for (int i = 0; i < 80 * 25; i++) {
-    vga[i] = 0x0F00;
+    vga[i] = 0x0F20; // space
   }
 
-  write_string(vga, 0, "The worst kernel to ever exist!");
-  write_string(vga, 2, "Press Enter to exit.");
+  vga_initialize();
+
+  vga_setcolor(vga_entry_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
+
+  vga_writestring("The worst kernel to ever exist!\n\n");
+  vga_writestring("Press Enter to exit.");
 
   idt_init();
   keyboard_init();
@@ -28,7 +25,7 @@ void kernel_main(void) {
     __asm__ volatile("hlt");
   }
 
-  write_string(vga, 4, "Exiting kernel...");
+  vga_writestring("\n\nExiting kernel...");
 
   __asm__ volatile("outw %0, %1"
                    :

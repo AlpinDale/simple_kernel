@@ -10,7 +10,6 @@ void vga_initialize(void) {
   terminal_column = 0;
   terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
   terminal_buffer = (u16 *)VGA_MEMORY;
-  vga_clear();
 }
 
 void vga_setcolor(u8 color) { terminal_color = color; }
@@ -54,12 +53,16 @@ void vga_writestring(const char *data) {
 }
 
 void vga_clear(void) {
-  for (size_t y = 0; y < VGA_HEIGHT; y++) {
-    for (size_t x = 0; x < VGA_WIDTH; x++) {
-      const size_t index = y * VGA_WIDTH + x;
-      terminal_buffer[index] = vga_entry(' ', terminal_color);
-    }
-  }
+  u16 blank = vga_entry(' ', terminal_color);
+
+  // Use rep stosw for fast memory fill
+  __asm__ volatile("cld\n\t"
+                   "rep stosw"
+                   : "=D"(terminal_buffer), "=c"(blank)
+                   : "D"(terminal_buffer), "a"(blank),
+                     "c"(VGA_WIDTH * VGA_HEIGHT)
+                   : "memory");
+
   terminal_row = 0;
   terminal_column = 0;
 }

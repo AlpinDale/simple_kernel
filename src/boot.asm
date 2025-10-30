@@ -170,10 +170,6 @@ protected_mode_start:
 	;   Set up stack
 	mov esp, 0x90000
 
-	;   Write 'P' to VGA (we're in protected mode!)
-	mov byte [0xB8000], 'P'
-	mov byte [0xB8001], 0x0F
-
 	;   Set up page tables for long mode
 	;   Clear 16KB for page tables
 	mov edi, 0x1000
@@ -206,10 +202,6 @@ protected_mode_start:
 	add  ebx, 0x1000
 	add  edi, 8
 	loop .set_page
-
-	;   Write 'G' to VGA (paging set up)
-	mov byte [0xB8002], 'G'
-	mov byte [0xB8003], 0x0F
 
 	;    Load 64-bit GDT
 	lgdt [gdt64_descriptor]
@@ -259,10 +251,6 @@ long_mode_start:
 
 	;   Set up stack
 	mov rsp, 0x200000
-
-	;   Write 'L' to VGA (long mode!)
-	mov byte [0xB8004], 'L'
-	mov byte [0xB8005], 0x0F
 
 	;    Jump to kernel at 0x10000
 	mov  rax, 0x10000

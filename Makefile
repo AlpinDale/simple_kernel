@@ -70,6 +70,7 @@ test: test-unit test-integration
 test-unit: | $(BUILD_DIR)
 	@echo "=== Running Unit Tests ==="
 	@gcc $(TESTS_DIR)/unit/test_vga.c -o build/test_vga && ./build/test_vga
+	@gcc $(TESTS_DIR)/unit/test_vga_driver.c -o build/test_vga_driver && ./build/test_vga_driver
 	@gcc $(TESTS_DIR)/unit/test_idt.c -o build/test_idt && ./build/test_idt
 	@gcc $(TESTS_DIR)/unit/test_keyboard.c -o build/test_keyboard && ./build/test_keyboard
 
