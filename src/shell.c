@@ -1,11 +1,22 @@
 #include "shell.h"
-#include "keyboard.h"
+
+#include "input.h"
 #include "kprint.h"
+#include "kstring.h"
+#include "panic.h"
+#include "pmm.h"
 #include "system.h"
 #include "vga.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
+
+typedef void (*shell_command_fn)(char **args, int argc);
+
+typedef struct {
+  const char *name;
+  shell_command_fn fn;
+} shell_command_t;
 
 static char cmd_buffer[CMD_BUFFER_SIZE];
 
@@ -14,40 +25,49 @@ static void shell_print_prompt(void) {
   kprint_colored("> ", VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
 }
 
-static void parse_command(char *input, char **cmd, char **args, int *argc) {
+int shell_parse_command(char *input, char **cmd, char **args, int *argc) {
   *argc = 0;
-  *cmd = input;
 
-  while (*input == ' ')
-    input++;
-  *cmd = input;
-
-  while (*input && *input != ' ')
-    input++;
-
-  if (*input) {
-    *input = '\0';
+  while (*input == ' ') {
     input++;
   }
 
-  while (*input && *argc < MAX_ARGS) {
-    while (*input == ' ')
+  *cmd = input;
+
+  while (*input != '\0' && *input != ' ') {
+    input++;
+  }
+
+  if (*input != '\0') {
+    *input++ = '\0';
+  }
+
+  while (*input != '\0' && *argc < MAX_ARGS) {
+    while (*input == ' ') {
       input++;
-    if (*input == '\0')
+    }
+
+    if (*input == '\0') {
       break;
+    }
 
     args[(*argc)++] = input;
 
-    while (*input && *input != ' ')
-      input++;
-    if (*input) {
-      *input = '\0';
+    while (*input != '\0' && *input != ' ') {
       input++;
     }
+
+    if (*input != '\0') {
+      *input++ = '\0';
+    }
   }
+
+  return *argc;
 }
 
-static void cmd_help(void) {
+static void cmd_help(char **args, int argc) {
+  (void)args;
+  (void)argc;
   kprint("Available commands:\n");
   kprint("  help     - Show this help message\n");
   kprint("  clear    - Clear the screen\n");
@@ -56,24 +76,25 @@ static void cmd_help(void) {
   kprint("  rainbow  - Rainbow text demo\n");
   kprint("  version  - Show kernel version\n");
   kprint("  uptime   - Show system uptime\n");
+  kprint("  meminfo  - Show PMM statistics\n");
+  kprint("  panic    - Trigger a panic for testing\n");
   kprint("  reboot   - Reboot the system\n");
   kprint("  halt     - Halt the system\n");
-  kprint("  exit     - Exit the shell\n");
+  kprint("  exit     - Exit QEMU successfully\n");
 }
 
-static void cmd_clear(void) {
-  volatile unsigned short *vga = (volatile unsigned short *)0xB8000;
-  for (int i = 0; i < 80 * 25; i++) {
-    vga[i] = 0x0F20;
-  }
-  vga_initialize();
+static void cmd_clear(char **args, int argc) {
+  (void)args;
+  (void)argc;
+  vga_clear();
 }
 
 static void cmd_echo(char **args, int argc) {
   for (int i = 0; i < argc; i++) {
     kprint(args[i]);
-    if (i < argc - 1)
+    if (i + 1 < argc) {
       kprint(" ");
+    }
   }
   kprint("\n");
 }
@@ -81,28 +102,26 @@ static void cmd_echo(char **args, int argc) {
 static void cmd_color(char **args, int argc) {
   if (argc == 0) {
     kprint("Usage: color <name>\n");
-    kprint("Colors: red, green, blue, yellow, cyan, magenta, white\n");
     return;
   }
 
   u8 color = VGA_COLOR_WHITE;
-  char *name = args[0];
 
-  if (name[0] == 'r' && name[1] == 'e')
+  if (kstrcmp(args[0], "red") == 0) {
     color = VGA_COLOR_LIGHT_RED;
-  else if (name[0] == 'g')
+  } else if (kstrcmp(args[0], "green") == 0) {
     color = VGA_COLOR_LIGHT_GREEN;
-  else if (name[0] == 'b')
+  } else if (kstrcmp(args[0], "blue") == 0) {
     color = VGA_COLOR_LIGHT_BLUE;
-  else if (name[0] == 'y')
+  } else if (kstrcmp(args[0], "yellow") == 0) {
     color = VGA_COLOR_YELLOW;
-  else if (name[0] == 'c')
+  } else if (kstrcmp(args[0], "cyan") == 0) {
     color = VGA_COLOR_LIGHT_CYAN;
-  else if (name[0] == 'm')
+  } else if (kstrcmp(args[0], "magenta") == 0) {
     color = VGA_COLOR_LIGHT_MAGENTA;
-  else if (name[0] == 'w')
+  } else if (kstrcmp(args[0], "white") == 0) {
     color = VGA_COLOR_WHITE;
-  else {
+  } else {
     kprint("Unknown color\n");
     return;
   }
@@ -114,166 +133,141 @@ static void cmd_color(char **args, int argc) {
 static void cmd_rainbow(char **args, int argc) {
   if (argc == 0) {
     kprint_rainbow("Rainbow text demo!\n");
-  } else {
-    for (int i = 0; i < argc; i++) {
-      kprint_rainbow(args[i]);
-      if (i < argc - 1)
-        kprint_rainbow(" ");
-    }
-    kprint_rainbow("\n");
+    return;
   }
+
+  for (int i = 0; i < argc; i++) {
+    kprint_rainbow(args[i]);
+    if (i + 1 < argc) {
+      kprint_rainbow(" ");
+    }
+  }
+  kprint_rainbow("\n");
 }
 
-static void cmd_version(void) {
+static void cmd_version(char **args, int argc) {
+  (void)args;
+  (void)argc;
   kprint("Kernel version: ");
   kprint(KERNEL_VERSION);
+  kprint("\nArchitecture: x86_64\n");
+}
+
+static void cmd_uptime(char **args, int argc) {
+  (void)args;
+  (void)argc;
+  kprint("Uptime (ms): ");
+  kprint_u64(system_get_uptime_ms());
   kprint("\n");
-  kprint("Built with: GCC + NASM\n");
-  kprint("Architecture: x86_64\n");
 }
 
-static void cmd_uptime(void) {
-  u64 uptime_ms = system_get_uptime_ms();
-  u64 seconds = uptime_ms / 1000;
-  u64 minutes = seconds / 60;
-  u64 hours = minutes / 60;
-
-  seconds %= 60;
-  minutes %= 60;
-
-  kprint("Uptime: ");
-
-  if (hours > 0) {
-    char h_str[20];
-    int i = 0;
-    u64 h = hours;
-    do {
-      h_str[i++] = '0' + (h % 10);
-      h /= 10;
-    } while (h > 0);
-    for (int j = i - 1; j >= 0; j--) {
-      char c[2] = {h_str[j], '\0'};
-      kprint(c);
-    }
-    kprint("h ");
-  }
-
-  if (minutes > 0 || hours > 0) {
-    char m_str[20];
-    int i = 0;
-    u64 m = minutes;
-    do {
-      m_str[i++] = '0' + (m % 10);
-      m /= 10;
-    } while (m > 0);
-    for (int j = i - 1; j >= 0; j--) {
-      char c[2] = {m_str[j], '\0'};
-      kprint(c);
-    }
-    kprint("m ");
-  }
-
-  char s_str[20];
-  int i = 0;
-  u64 s = seconds;
-  do {
-    s_str[i++] = '0' + (s % 10);
-    s /= 10;
-  } while (s > 0);
-  for (int j = i - 1; j >= 0; j--) {
-    char c[2] = {s_str[j], '\0'};
-    kprint(c);
-  }
-  kprint("s\n");
+static void cmd_meminfo(char **args, int argc) {
+  (void)args;
+  (void)argc;
+  kprint("PMM total bytes: ");
+  kprint_u64(pmm_total_bytes());
+  kprint("\nPMM free bytes: ");
+  kprint_u64(pmm_free_bytes());
+  kprint("\nPMM reserved bytes: ");
+  kprint_u64(pmm_reserved_bytes());
+  kprint("\n");
 }
 
-static void cmd_reboot(void) {
+static void cmd_panic(char **args, int argc) {
+  (void)args;
+  (void)argc;
+  panic("panic command invoked");
+}
+
+static void cmd_reboot(char **args, int argc) {
+  (void)args;
+  (void)argc;
   kprint_colored("Rebooting system...\n", VGA_COLOR_YELLOW, VGA_COLOR_BLACK);
   system_reboot();
 }
 
-static void cmd_halt(void) {
+static void cmd_halt(char **args, int argc) {
+  (void)args;
+  (void)argc;
   kprint_colored("System halted.\n", VGA_COLOR_RED, VGA_COLOR_BLACK);
   system_halt();
 }
+
+static const shell_command_t commands[] = {
+    {"help", cmd_help},       {"clear", cmd_clear},   {"echo", cmd_echo},
+    {"color", cmd_color},     {"rainbow", cmd_rainbow},
+    {"version", cmd_version}, {"uptime", cmd_uptime}, {"meminfo", cmd_meminfo},
+    {"panic", cmd_panic},     {"reboot", cmd_reboot}, {"halt", cmd_halt},
+};
 
 static int execute_command(char *cmd, char **args, int argc) {
   if (cmd[0] == '\0') {
     return 0;
   }
 
-  if (cmd[0] == 'h' && cmd[1] == 'e')
-    cmd_help();
-  else if (cmd[0] == 'c' && cmd[1] == 'l')
-    cmd_clear();
-  else if (cmd[0] == 'e' && cmd[1] == 'c')
-    cmd_echo(args, argc);
-  else if (cmd[0] == 'c' && cmd[1] == 'o')
-    cmd_color(args, argc);
-  else if (cmd[0] == 'r' && cmd[1] == 'a')
-    cmd_rainbow(args, argc);
-  else if (cmd[0] == 'v')
-    cmd_version();
-  else if (cmd[0] == 'u')
-    cmd_uptime();
-  else if (cmd[0] == 'r' && cmd[1] == 'e')
-    cmd_reboot();
-  else if (cmd[0] == 'h' && cmd[1] == 'a')
-    cmd_halt();
-  else if (cmd[0] == 'e' && cmd[1] == 'x')
+  if (kstrcmp(cmd, "exit") == 0) {
     return 1;
-  else {
-    kprint("Unknown command: ");
-    kprint(cmd);
-    kprint("\n");
   }
 
+  for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+    if (kstrcmp(cmd, commands[i].name) == 0) {
+      commands[i].fn(args, argc);
+      return 0;
+    }
+  }
+
+  kprint("Unknown command: ");
+  kprint(cmd);
+  kprint("\n");
   return 0;
 }
 
 void shell_init(void) {
-  cmd_clear();
-  kprint_rainbow("Welcome to the worst kernel shell!\n");
+  cmd_clear(0, 0);
+  kprint_rainbow("Welcome to the kernel shell!\n");
   kprint("Type 'help' for available commands.\n\n");
 }
 
 void shell_run(void) {
   shell_init();
 
-  while (1) {
+  for (;;) {
     shell_print_prompt();
 
     u16 pos = 0;
-    while (1) {
-      char c = keyboard_getchar();
+    for (;;) {
+      char c = input_getchar();
 
       if (c == '\n') {
         kprint("\n");
         cmd_buffer[pos] = '\0';
         break;
-      } else if (c == '\b') {
+      }
+
+      if (c == '\b' || c == 0x7F) {
         if (pos > 0) {
           pos--;
-          // VGA driver handles backspace
-          char bs[2] = {'\b', '\0'};
-          vga_writestring(bs);
+          kprint("\b");
         }
-      } else if (pos < CMD_BUFFER_SIZE - 1) {
+        continue;
+      }
+
+      if (pos + 1 < CMD_BUFFER_SIZE) {
         cmd_buffer[pos++] = c;
-        char str[2] = {c, '\0'};
-        kprint(str);
+        char tmp[2] = {c, '\0'};
+        kprint(tmp);
       }
     }
 
-    char *cmd;
+    char *cmd = 0;
     char *args[MAX_ARGS];
-    int argc;
-
-    parse_command(cmd_buffer, &cmd, args, &argc);
+    int argc = 0;
+    shell_parse_command(cmd_buffer, &cmd, args, &argc);
 
     if (execute_command(cmd, args, argc)) {
-      kprint_colored("\nExiting shell...\n", VGA_COLOR_YELLOW, VGA_COLOR_BLACK);
-      break;
+      kprint_colored("Exiting shell.\n", VGA_COLOR_YELLOW, VGA_COLOR_BLACK);
+      system_qemu_exit(0x10);
+      return;
     }
   }
 }

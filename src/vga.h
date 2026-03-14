@@ -35,5 +35,9 @@ void vga_putchar(char c);
 void vga_write(const char *data, size_t size);
 void vga_writestring(const char *data);
 void vga_clear(void);
+void vga_bind_buffer(u16 *buffer);
+size_t vga_get_row(void);
+size_t vga_get_column(void);
+u8 vga_get_color(void);
 
 #endif // VGA_H

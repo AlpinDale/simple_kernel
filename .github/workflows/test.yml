@@ -16,13 +16,16 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y nasm gcc binutils qemu-system-x86
+          sudo apt-get install -y clang lld llvm nasm qemu-system-x86
 
-      - name: Build kernel
-        run: make
+      - name: Doctor
+        run: make doctor
 
       - name: Run unit tests
         run: make test-unit
+
+      - name: Build kernel
+        run: make
 
       - name: Run integration tests
         run: make test-integration

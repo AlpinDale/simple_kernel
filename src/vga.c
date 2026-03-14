@@ -1,13 +1,11 @@
 #include "vga.h"
+#include "io.h"
+#include "kstring.h"
 
 static size_t terminal_row;
 static size_t terminal_column;
 static u8 terminal_color;
 static u16 *terminal_buffer;
-
-static inline void outb(u16 port, u8 value) {
-  __asm__ volatile("outb %0, %1" : : "a"(value), "Nd"(port));
-}
 
 static void update_cursor(void) {
   u16 pos = terminal_row * VGA_WIDTH + terminal_column;
@@ -17,11 +15,30 @@ static void update_cursor(void) {
   outb(0x3D5, (u8)((pos >> 8) & 0xFF));
 }
 
+static void vga_scroll(void) {
+  if (terminal_row < VGA_HEIGHT) {
+    return;
+  }
+
+  kmemmove(terminal_buffer, terminal_buffer + VGA_WIDTH,
+           (VGA_HEIGHT - 1) * VGA_WIDTH * sizeof(u16));
+
+  u16 blank = vga_entry(' ', terminal_color);
+  for (size_t i = 0; i < VGA_WIDTH; i++) {
+    terminal_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + i] = blank;
+  }
+
+  terminal_row = VGA_HEIGHT - 1;
+}
+
 void vga_initialize(void) {
   terminal_row = 0;
   terminal_column = 0;
   terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-  terminal_buffer = (u16 *)VGA_MEMORY;
+  if (terminal_buffer == 0) {
+    terminal_buffer = (u16 *)VGA_MEMORY;
+  }
+  vga_clear();
   update_cursor();
 }
 
@@ -35,15 +52,18 @@ void vga_putentryat(char c, u8 color, size_t x, size_t y) {
 void vga_putchar(char c) {
   if (c == '\n') {
     terminal_column = 0;
-    if (++terminal_row == VGA_HEIGHT) {
-      terminal_row = 0;
-    }
+    terminal_row++;
+    vga_scroll();
     update_cursor();
     return;
   }
 
   if (c == '\b') {
-    if (terminal_column > 0) {
+    if (terminal_column > 0 || terminal_row > 0) {
+      if (terminal_column == 0) {
+        terminal_row--;
+        terminal_column = VGA_WIDTH;
+      }
       terminal_column--;
       vga_putentryat(' ', terminal_color, terminal_column, terminal_row);
     }
@@ -55,9 +75,8 @@ void vga_putchar(char c) {
 
   if (++terminal_column == VGA_WIDTH) {
     terminal_column = 0;
-    if (++terminal_row == VGA_HEIGHT) {
-      terminal_row = 0;
-    }
+    terminal_row++;
+    vga_scroll();
   }
 
   update_cursor();
@@ -70,24 +89,24 @@ void vga_write(const char *data, size_t size) {
 }
 
 void vga_writestring(const char *data) {
-  size_t len = 0;
-  while (data[len]) {
-    len++;
-  }
-  vga_write(data, len);
+  vga_write(data, kstrlen(data));
 }
 
 void vga_clear(void) {
   u16 blank = vga_entry(' ', terminal_color);
-
-  __asm__ volatile("cld\n\t"
-                   "rep stosw"
-                   : "=D"(terminal_buffer), "=c"(blank)
-                   : "D"(terminal_buffer), "a"(blank),
-                     "c"(VGA_WIDTH * VGA_HEIGHT)
-                   : "memory");
+  for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
+    terminal_buffer[i] = blank;
+  }
 
   terminal_row = 0;
   terminal_column = 0;
   update_cursor();
 }
+
+void vga_bind_buffer(u16 *buffer) { terminal_buffer = buffer; }
+
+size_t vga_get_row(void) { return terminal_row; }
+
+size_t vga_get_column(void) { return terminal_column; }
+
+u8 vga_get_color(void) { return terminal_color; }

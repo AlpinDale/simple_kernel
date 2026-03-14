@@ -33,7 +33,7 @@ TEST(vga_entry_creates_correct_value) {
 
 ### Integration Tests
 
-Test system-level behavior using QEMU.
+Test system-level behavior using QEMU and the kernel serial console.
 
 **When to write:**
 - Boot sequence changes
@@ -43,12 +43,9 @@ Test system-level behavior using QEMU.
 
 **Example:**
 ```bash
-# tests/integration/test_boot.sh
-ENTRY=$(readelf -h build/kernel.elf | grep "Entry point")
-if [ "$ENTRY" != "0x10000" ]; then
-    echo "✗ Kernel entry point incorrect"
-    exit 1
-fi
+tests/integration/test_boot.sh
+tests/integration/test_shell_io.sh
+tests/integration/test_panic.sh
 ```
 
 ## Writing New Tests
@@ -91,29 +88,7 @@ int main(void) {
 ### Integration Test Template
 
 ```bash
-#!/bin/bash
-# tests/integration/test_myfeature.sh
-set -e
-
-echo "Integration Test: My Feature"
-echo "============================="
-
-# Run QEMU with test conditions
-OUTPUT=$(timeout 5 qemu-system-x86_64 \
-    -fda build/kernel.img \
-    -device isa-debug-exit,iobase=0x604,iosize=0x1 \
-    -display none 2>&1 || true)
-
-# Validate output
-if [[ $OUTPUT == *"expected_string"* ]]; then
-    echo "✓ Feature behaves correctly"
-else
-    echo "✗ Feature test failed"
-    exit 1
-fi
-
-echo ""
-echo "Test passed!"
+tests/integration/test_boot.sh
 ```
 
 ## Available Assertions
@@ -152,10 +127,10 @@ make test-integration
 
 ## Test Coverage Goals
 
-- [ ] Boot sequence (100% covered)
-- [ ] VGA text mode (100% covered)
-- [ ] IDT setup and gates (100% covered)
-- [ ] Keyboard input (100% covered)
-- [ ] Memory management (TODO)
-- [ ] GDT setup (TODO)
-- [ ] Page table setup (TODO)
+- [x] Boot sequence
+- [x] VGA text mode
+- [x] IDT setup and gates
+- [x] Keyboard input
+- [x] Shell serial I/O
+- [x] Panic path
+- [x] Physical memory manager basics

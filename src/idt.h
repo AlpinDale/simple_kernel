@@ -20,5 +20,6 @@ struct idt_ptr {
 
 void idt_init(void);
 void idt_set_gate(u8 num, u64 handler, u16 selector, u8 flags);
+void idt_load_current(void);
 
 #endif // IDT_H

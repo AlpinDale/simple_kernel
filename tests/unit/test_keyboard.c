@@ -1,52 +1,55 @@
 #include "../test.h"
-#include <stdint.h>
 
-typedef uint8_t u8;
-typedef uint16_t u16;
+#include "../../src/keyboard.h"
 
-#define ENTER_SCANCODE 0x1C
-#define ESC_SCANCODE 0x01
-#define A_SCANCODE 0x1E
+u8 test_inb(u16 port) {
+  (void)port;
+  return 0;
+}
 
-TEST(enter_scancode_value) {
-  ASSERT_EQ(ENTER_SCANCODE, 0x1C);
+void test_outb(u16 port, u8 value) {
+  (void)port;
+  (void)value;
+}
+
+void test_outw(u16 port, u16 value) {
+  (void)port;
+  (void)value;
+}
+
+TEST(keyboard_translates_shifted_letters) {
+  keyboard_reset_state();
+  keyboard_process_scancode(0x2A);
+  keyboard_process_scancode(0x1E);
+  ASSERT_TRUE(keyboard_has_input());
+  ASSERT_EQ(keyboard_getchar(), 'A');
   TEST_PASS_MSG();
 }
 
-TEST(scancode_is_enter) {
-  u8 scancode = 0x1C;
-  ASSERT_TRUE(scancode == ENTER_SCANCODE);
+TEST(keyboard_ignores_key_releases) {
+  keyboard_reset_state();
+  keyboard_process_scancode(0x9E);
+  ASSERT_FALSE(keyboard_has_input());
   TEST_PASS_MSG();
 }
 
-TEST(scancode_is_not_enter) {
-  u8 scancode = 0x1E;
-  ASSERT_FALSE(scancode == ENTER_SCANCODE);
-  TEST_PASS_MSG();
-}
+TEST(keyboard_ring_buffer_wraps) {
+  keyboard_reset_state();
+  for (int i = 0; i < INPUT_BUFFER_SIZE - 1; i++) {
+    keyboard_process_scancode(0x1E);
+  }
 
-TEST(pic_eoi_port) {
-  u16 pic_command_port = 0x20;
-  u8 eoi_command = 0x20;
-  ASSERT_EQ(pic_command_port, 0x20);
-  ASSERT_EQ(eoi_command, 0x20);
-  TEST_PASS_MSG();
-}
+  for (int i = 0; i < INPUT_BUFFER_SIZE - 2; i++) {
+    ASSERT_EQ(keyboard_getchar(), 'a');
+  }
 
-TEST(keyboard_data_port) {
-  u16 keyboard_port = 0x60;
-  ASSERT_EQ(keyboard_port, 0x60);
   TEST_PASS_MSG();
 }
 
 int main(void) {
   printf("\nKeyboard Tests:\n");
-
-  RUN_TEST(enter_scancode_value);
-  RUN_TEST(scancode_is_enter);
-  RUN_TEST(scancode_is_not_enter);
-  RUN_TEST(pic_eoi_port);
-  RUN_TEST(keyboard_data_port);
-
+  RUN_TEST(keyboard_translates_shifted_letters);
+  RUN_TEST(keyboard_ignores_key_releases);
+  RUN_TEST(keyboard_ring_buffer_wraps);
   TEST_SUMMARY();
 }

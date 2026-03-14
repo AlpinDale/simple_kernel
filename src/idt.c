@@ -31,9 +31,6 @@ void idt_init(void) {
     idt[i].zero = 0;
   }
 
-  // IRQ0 = interrupt 32
-  extern void timer_handler_asm(void);
-  idt_set_gate(32, (u64)timer_handler_asm, 0x08, 0x8E);
-
-  idt_load((u64)&idtp);
 }
+
+void idt_load_current(void) { idt_load((u64)&idtp); }

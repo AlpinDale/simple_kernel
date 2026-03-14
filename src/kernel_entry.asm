@@ -5,6 +5,8 @@
 _start:
 	cld
 
+	mov    r12, rdi
+
 	extern _bss_start
 	extern _bss_end
 	mov    rdi, _bss_start
@@ -14,6 +16,7 @@ _start:
 	rep    stosb
 
 	extern kernel_main
+	mov    rdi, r12
 	call   kernel_main
 
 .hang:

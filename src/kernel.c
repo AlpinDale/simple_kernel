@@ -1,24 +1,43 @@
-#include "idt.h"
+#include "boot_info.h"
+#include "console.h"
+#include "cpu.h"
+#include "gdt.h"
 #include "keyboard.h"
+#include "kprint.h"
+#include "panic.h"
+#include "pmm.h"
 #include "shell.h"
 #include "system.h"
-#include "vga.h"
+#include "trap.h"
+void kernel_main(const boot_info_t *boot_info) {
+  console_init();
 
-void kernel_main(void) {
-  vga_initialize();
-  idt_init();
+  if (boot_info == 0 || boot_info->magic != BOOT_INFO_MAGIC) {
+    panic("missing boot info");
+  }
+
+  gdt_init();
+  trap_init();
   keyboard_init();
   system_init_timer();
+  pmm_init(boot_info);
 
-  __asm__ volatile("sti");
+  kprint("simple_kernel ");
+  kprint(KERNEL_VERSION);
+  kprint("\nboot_info memory entries: ");
+  kprint_u64(boot_info->memory_map_entries);
+  kprint("\nkernel phys start: ");
+  kprint_hex(boot_info->kernel_phys_start);
+  kprint("\nkernel phys end: ");
+  kprint_hex(boot_info->kernel_phys_end);
+  kprint("\n\n");
 
+  cpu_sti();
   shell_run();
-
-  __asm__ volatile("outw %0, %1"
-                   :
-                   : "a"((unsigned short)0x2000), "Nd"((unsigned short)0x604));
+  system_qemu_exit(0x10);
 
   for (;;) {
-    __asm__ volatile("cli; hlt");
+    cpu_cli();
+    cpu_hlt();
   }
 }
