@@ -69,6 +69,25 @@ int kstrncmp(const char *lhs, const char *rhs, size_t n) {
   return 0;
 }
 
+int ku64_parse(const char *str, u64 *value) {
+  if (str == 0 || *str == '\0' || value == 0) {
+    return 0;
+  }
+
+  u64 out = 0;
+  while (*str != '\0') {
+    if (*str < '0' || *str > '9') {
+      return 0;
+    }
+
+    out = out * 10 + (u64)(*str - '0');
+    str++;
+  }
+
+  *value = out;
+  return 1;
+}
+
 static char *convert_u64(char *buffer, size_t size, u64 value, u32 base,
                          const char *digits) {
   char tmp[32];

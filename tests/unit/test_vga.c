@@ -32,7 +32,7 @@ TEST(vga_entry_creates_correct_value) {
 TEST(vga_putchar_advances_cursor) {
   reset_vga();
   vga_putchar('A');
-  ASSERT_EQ(mock_buffer[0] & 0xFF, 'A');
+  ASSERT_EQ(mock_buffer[VGA_PADDING_Y * VGA_WIDTH + VGA_PADDING_X] & 0xFF, 'A');
   ASSERT_EQ(vga_get_column(), 1);
   ASSERT_EQ(vga_get_row(), 0);
   TEST_PASS_MSG();
@@ -41,15 +41,18 @@ TEST(vga_putchar_advances_cursor) {
 TEST(vga_scrolls_instead_of_wrapping) {
   reset_vga();
 
-  for (int row = 0; row < VGA_HEIGHT; row++) {
+  for (int row = 0; row < VGA_CONTENT_HEIGHT; row++) {
     vga_putchar('0' + (row % 10));
     vga_putchar('\n');
   }
 
   vga_putchar('X');
-  ASSERT_EQ(vga_get_row(), VGA_HEIGHT - 1);
-  ASSERT_EQ(mock_buffer[0] & 0xFF, '1');
-  ASSERT_EQ(mock_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH] & 0xFF, 'X');
+  ASSERT_EQ(vga_get_row(), VGA_CONTENT_HEIGHT - 1);
+  ASSERT_EQ(mock_buffer[VGA_PADDING_Y * VGA_WIDTH + VGA_PADDING_X] & 0xFF, '1');
+  ASSERT_EQ(mock_buffer[(VGA_PADDING_Y + VGA_CONTENT_HEIGHT - 1) * VGA_WIDTH +
+                        VGA_PADDING_X] &
+                0xFF,
+            'X');
   TEST_PASS_MSG();
 }
 
@@ -64,11 +67,45 @@ TEST(vga_backspace_moves_to_previous_line) {
   TEST_PASS_MSG();
 }
 
+TEST(vga_scroll_view_shows_scrollback_rows) {
+  reset_vga();
+
+  for (int row = 0; row < VGA_CONTENT_HEIGHT + 2; row++) {
+    vga_putchar('A' + row);
+    vga_putchar('\n');
+  }
+
+  ASSERT_EQ(vga_get_viewport_row(), 3);
+  ASSERT_EQ(mock_buffer[VGA_PADDING_Y * VGA_WIDTH + VGA_PADDING_X] & 0xFF, 'D');
+
+  vga_scroll_view(-2);
+  ASSERT_EQ(vga_get_viewport_row(), 1);
+  ASSERT_EQ(mock_buffer[VGA_PADDING_Y * VGA_WIDTH + VGA_PADDING_X] & 0xFF, 'B');
+
+  vga_scroll_to_bottom();
+  ASSERT_EQ(vga_get_viewport_row(), 3);
+  ASSERT_EQ(mock_buffer[VGA_PADDING_Y * VGA_WIDTH + VGA_PADDING_X] & 0xFF, 'D');
+  TEST_PASS_MSG();
+}
+
+TEST(vga_leaves_blank_border_padding) {
+  reset_vga();
+  vga_putchar('A');
+
+  ASSERT_EQ(mock_buffer[0] & 0xFF, ' ');
+  ASSERT_EQ(mock_buffer[VGA_WIDTH - 1] & 0xFF, ' ');
+  ASSERT_EQ(mock_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH] & 0xFF, ' ');
+  ASSERT_EQ(mock_buffer[(VGA_PADDING_Y * VGA_WIDTH) + VGA_PADDING_X] & 0xFF, 'A');
+  TEST_PASS_MSG();
+}
+
 int main(void) {
   printf("\nVGA Tests:\n");
   RUN_TEST(vga_entry_creates_correct_value);
   RUN_TEST(vga_putchar_advances_cursor);
   RUN_TEST(vga_scrolls_instead_of_wrapping);
   RUN_TEST(vga_backspace_moves_to_previous_line);
+  RUN_TEST(vga_scroll_view_shows_scrollback_rows);
+  RUN_TEST(vga_leaves_blank_border_padding);
   TEST_SUMMARY();
 }

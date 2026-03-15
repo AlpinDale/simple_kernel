@@ -5,6 +5,10 @@
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
+#define VGA_PADDING_X 1
+#define VGA_PADDING_Y 1
+#define VGA_CONTENT_WIDTH (VGA_WIDTH - (VGA_PADDING_X * 2))
+#define VGA_CONTENT_HEIGHT (VGA_HEIGHT - (VGA_PADDING_Y * 2))
 #define VGA_MEMORY 0xB8000
 #define VGA_COLOR_BLACK 0
 #define VGA_COLOR_BLUE 1
@@ -36,8 +40,12 @@ void vga_write(const char *data, size_t size);
 void vga_writestring(const char *data);
 void vga_clear(void);
 void vga_bind_buffer(u16 *buffer);
+void vga_scroll_view(i32 delta);
+void vga_scroll_to_bottom(void);
 size_t vga_get_row(void);
 size_t vga_get_column(void);
+size_t vga_get_viewport_row(void);
+size_t vga_get_total_rows(void);
 u8 vga_get_color(void);
 
 #endif // VGA_H

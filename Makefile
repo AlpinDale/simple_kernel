@@ -34,7 +34,8 @@ KERNEL_ENTRY_SOURCE := $(SRC_DIR)/kernel_entry.asm
 KERNEL_ASM_SOURCES := $(SRC_DIR)/idt_asm.asm $(SRC_DIR)/gdt_asm.asm $(SRC_DIR)/trap_asm.asm
 C_SOURCES := $(SRC_DIR)/kernel.c $(SRC_DIR)/console.c $(SRC_DIR)/gdt.c $(SRC_DIR)/idt.c \
 	$(SRC_DIR)/input.c $(SRC_DIR)/keyboard.c $(SRC_DIR)/kprint.c $(SRC_DIR)/kstring.c \
-	$(SRC_DIR)/panic.c $(SRC_DIR)/pmm.c $(SRC_DIR)/serial.c $(SRC_DIR)/shell.c \
+	$(SRC_DIR)/boot.c $(SRC_DIR)/cpuinfo.c $(SRC_DIR)/heap.c $(SRC_DIR)/panic.c \
+	$(SRC_DIR)/pci.c $(SRC_DIR)/pmm.c $(SRC_DIR)/rtc.c $(SRC_DIR)/serial.c $(SRC_DIR)/shell.c \
 	$(SRC_DIR)/system.c $(SRC_DIR)/trap.c $(SRC_DIR)/vga.c
 
 BOOT_STAGE1_SOURCE := $(SRC_DIR)/boot_stage1.asm
@@ -93,11 +94,15 @@ test-unit: | $(BUILD_DIR)
 	@echo "=== Running Unit Tests ==="
 	@$(HOST_CC) -DKERNEL_TEST -I$(SRC_DIR) $(TESTS_DIR)/unit/test_vga.c $(SRC_DIR)/vga.c $(SRC_DIR)/kstring.c -o $(BUILD_DIR)/test_vga && ./$(BUILD_DIR)/test_vga
 	@$(HOST_CC) -I$(SRC_DIR) $(TESTS_DIR)/unit/test_kstring.c $(SRC_DIR)/kstring.c -o $(BUILD_DIR)/test_kstring && ./$(BUILD_DIR)/test_kstring
+	@$(HOST_CC) -DKERNEL_TEST -I$(SRC_DIR) $(TESTS_DIR)/unit/test_cpuinfo.c $(SRC_DIR)/cpuinfo.c $(SRC_DIR)/kstring.c -o $(BUILD_DIR)/test_cpuinfo && ./$(BUILD_DIR)/test_cpuinfo
 	@$(HOST_CC) -DKERNEL_TEST -I$(SRC_DIR) $(TESTS_DIR)/unit/test_keyboard.c $(SRC_DIR)/keyboard.c -o $(BUILD_DIR)/test_keyboard && ./$(BUILD_DIR)/test_keyboard
 	@$(HOST_CC) -I$(SRC_DIR) $(TESTS_DIR)/unit/test_keyboard_map.c -o $(BUILD_DIR)/test_keyboard_map && ./$(BUILD_DIR)/test_keyboard_map
 	@$(HOST_CC) -I$(SRC_DIR) $(TESTS_DIR)/unit/test_idt.c $(SRC_DIR)/idt.c -o $(BUILD_DIR)/test_idt && ./$(BUILD_DIR)/test_idt
 	@$(HOST_CC) -I$(SRC_DIR) $(TESTS_DIR)/unit/test_shell_parser.c $(SRC_DIR)/shell.c $(SRC_DIR)/kstring.c -o $(BUILD_DIR)/test_shell_parser && ./$(BUILD_DIR)/test_shell_parser
+	@$(HOST_CC) -I$(SRC_DIR) $(TESTS_DIR)/unit/test_heap.c $(SRC_DIR)/heap.c $(SRC_DIR)/kstring.c -o $(BUILD_DIR)/test_heap && ./$(BUILD_DIR)/test_heap
 	@$(HOST_CC) -I$(SRC_DIR) $(TESTS_DIR)/unit/test_pmm.c $(SRC_DIR)/pmm.c $(SRC_DIR)/kstring.c -o $(BUILD_DIR)/test_pmm && ./$(BUILD_DIR)/test_pmm
+	@$(HOST_CC) -DKERNEL_TEST -I$(SRC_DIR) $(TESTS_DIR)/unit/test_pci.c $(SRC_DIR)/pci.c -o $(BUILD_DIR)/test_pci && ./$(BUILD_DIR)/test_pci
+	@$(HOST_CC) -DKERNEL_TEST -I$(SRC_DIR) $(TESTS_DIR)/unit/test_rtc.c $(SRC_DIR)/rtc.c -o $(BUILD_DIR)/test_rtc && ./$(BUILD_DIR)/test_rtc
 
 test-integration: $(DISK_IMAGE)
 	@echo "\n=== Running Integration Tests ==="

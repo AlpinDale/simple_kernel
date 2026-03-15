@@ -7,8 +7,13 @@
 #define KEY_ENTER 0x1C
 #define KEY_LSHIFT 0x2A
 #define KEY_RSHIFT 0x36
+#define KEY_EXTENDED_PREFIX 0xE0
 #define KEY_LSHIFT_RELEASE 0xAA
 #define KEY_RSHIFT_RELEASE 0xB6
+#define KEY_ARROW_UP 0x48
+#define KEY_ARROW_LEFT 0x4B
+#define KEY_ARROW_RIGHT 0x4D
+#define KEY_ARROW_DOWN 0x50
 
 // Scancode to ASCII mapping (US keyboard layout)
 static const char scancode_to_ascii[] = {

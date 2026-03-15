@@ -35,9 +35,25 @@ TEST(pmm_allocates_frame) {
   TEST_PASS_MSG();
 }
 
+TEST(pmm_allocates_contiguous_frames) {
+  boot_info_t boot_info = {0};
+  boot_info.magic = BOOT_INFO_MAGIC;
+  boot_info.memory_map_entries = 2;
+  boot_info.memory_map_addr = (unsigned long long)(uintptr_t)entries;
+  boot_info.kernel_phys_start = 0x00100000;
+  boot_info.kernel_phys_end = 0x00120000;
+
+  pmm_init(&boot_info);
+  void *frame = pmm_alloc_frames(2);
+  ASSERT_NOT_NULL(frame);
+  ASSERT_EQ(((uintptr_t)frame) % 4096, 0);
+  TEST_PASS_MSG();
+}
+
 int main(void) {
   printf("\nPMM Tests:\n");
   RUN_TEST(pmm_reserves_kernel_range);
   RUN_TEST(pmm_allocates_frame);
+  RUN_TEST(pmm_allocates_contiguous_frames);
   TEST_SUMMARY();
 }

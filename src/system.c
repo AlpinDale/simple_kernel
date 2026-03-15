@@ -44,4 +44,12 @@ void system_init_timer(void) {
 
 u64 system_get_uptime_ms(void) { return timer_ticks; }
 
+void system_sleep_ms(u64 delay_ms) {
+  u64 deadline = system_get_uptime_ms() + delay_ms;
+
+  while (system_get_uptime_ms() < deadline) {
+    cpu_hlt();
+  }
+}
+
 void system_qemu_exit(u16 code) { outb(0xF4, (u8)code); }

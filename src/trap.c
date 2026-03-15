@@ -67,8 +67,44 @@ static void dump_frame(trap_frame_t *frame) {
   kprint_hex(frame->error_code);
   kprint(" rip=");
   kprint_hex(frame->rip);
+  kprint(" cs=");
+  kprint_hex(frame->cs);
   kprint(" rflags=");
   kprint_hex(frame->rflags);
+  if (frame->vector == 14) {
+    kprint(" cr2=");
+    kprint_hex(cpu_read_cr2());
+  }
+  kprint("\n rax=");
+  kprint_hex(frame->rax);
+  kprint(" rbx=");
+  kprint_hex(frame->rbx);
+  kprint(" rcx=");
+  kprint_hex(frame->rcx);
+  kprint(" rdx=");
+  kprint_hex(frame->rdx);
+  kprint("\n rsi=");
+  kprint_hex(frame->rsi);
+  kprint(" rdi=");
+  kprint_hex(frame->rdi);
+  kprint(" rbp=");
+  kprint_hex(frame->rbp);
+  kprint("\n r8=");
+  kprint_hex(frame->r8);
+  kprint(" r9=");
+  kprint_hex(frame->r9);
+  kprint(" r10=");
+  kprint_hex(frame->r10);
+  kprint(" r11=");
+  kprint_hex(frame->r11);
+  kprint("\n r12=");
+  kprint_hex(frame->r12);
+  kprint(" r13=");
+  kprint_hex(frame->r13);
+  kprint(" r14=");
+  kprint_hex(frame->r14);
+  kprint(" r15=");
+  kprint_hex(frame->r15);
   kprint("\n");
 }
 

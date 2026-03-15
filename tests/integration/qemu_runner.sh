@@ -62,10 +62,38 @@ map_key() {
 send_script() {
   local text="$1"
   local i key char
-  for ((i = 0; i < ${#text}; i++)); do
+  for ((i = 0; i < ${#text};)); do
+    case "${text:i}" in
+      "<UP>"*)
+        printf 'sendkey up\n' >&3
+        i=$((i + 4))
+        sleep 0.03
+        continue
+        ;;
+      "<DOWN>"*)
+        printf 'sendkey down\n' >&3
+        i=$((i + 6))
+        sleep 0.03
+        continue
+        ;;
+      "<LEFT>"*)
+        printf 'sendkey left\n' >&3
+        i=$((i + 6))
+        sleep 0.03
+        continue
+        ;;
+      "<RIGHT>"*)
+        printf 'sendkey right\n' >&3
+        i=$((i + 7))
+        sleep 0.03
+        continue
+        ;;
+    esac
+
     char="${text:i:1}"
     key="$(map_key "$char")"
     printf 'sendkey %s\n' "$key" >&3
+    i=$((i + 1))
     sleep 0.03
   done
 }

@@ -1,7 +1,9 @@
+#include "boot.h"
 #include "boot_info.h"
 #include "console.h"
 #include "cpu.h"
 #include "gdt.h"
+#include "heap.h"
 #include "keyboard.h"
 #include "kprint.h"
 #include "panic.h"
@@ -16,11 +18,13 @@ void kernel_main(const boot_info_t *boot_info) {
     panic("missing boot info");
   }
 
+  boot_init(boot_info);
   gdt_init();
   trap_init();
   keyboard_init();
   system_init_timer();
   pmm_init(boot_info);
+  heap_init();
 
   kprint("simple_kernel ");
   kprint(KERNEL_VERSION);
@@ -30,6 +34,8 @@ void kernel_main(const boot_info_t *boot_info) {
   kprint_hex(boot_info->kernel_phys_start);
   kprint("\nkernel phys end: ");
   kprint_hex(boot_info->kernel_phys_end);
+  kprint("\nheap total bytes: ");
+  kprint_u64(heap_total_bytes());
   kprint("\n\n");
 
   cpu_sti();

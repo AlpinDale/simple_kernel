@@ -90,11 +90,33 @@ void pmm_init(const boot_info_t *boot_info) {
 }
 
 void *pmm_alloc_frame(void) {
+  return pmm_alloc_frames(1);
+}
+
+void *pmm_alloc_frames(size_t count) {
+  if (count == 0 || count > frame_limit) {
+    return 0;
+  }
+
+  u64 run_start = 0;
+  u64 run_length = 0;
+
   for (u64 frame = 0; frame < frame_limit; frame++) {
     if (!bit_test(frame)) {
-      bit_set(frame);
-      free_frames--;
-      return (void *)(uintptr_t)(frame * PMM_PAGE_SIZE);
+      if (run_length == 0) {
+        run_start = frame;
+      }
+      run_length++;
+
+      if (run_length == count) {
+        for (u64 i = 0; i < count; i++) {
+          bit_set(run_start + i);
+        }
+        free_frames -= count;
+        return (void *)(uintptr_t)(run_start * PMM_PAGE_SIZE);
+      }
+    } else {
+      run_length = 0;
     }
   }
 
@@ -102,14 +124,28 @@ void *pmm_alloc_frame(void) {
 }
 
 void pmm_free_frame(void *frame_ptr) {
-  u64 frame = (u64)(uintptr_t)frame_ptr / PMM_PAGE_SIZE;
+  pmm_free_frames(frame_ptr, 1);
+}
 
-  if (frame >= frame_limit || !bit_test(frame)) {
+void pmm_free_frames(void *frame_ptr, size_t count) {
+  if (frame_ptr == 0 || count == 0) {
     return;
   }
 
-  bit_clear(frame);
-  free_frames++;
+  u64 frame = (u64)(uintptr_t)frame_ptr / PMM_PAGE_SIZE;
+
+  if (frame >= frame_limit) {
+    return;
+  }
+
+  for (size_t i = 0; i < count; i++) {
+    u64 current = frame + i;
+    if (current >= frame_limit || !bit_test(current)) {
+      break;
+    }
+    bit_clear(current);
+    free_frames++;
+  }
 }
 
 u64 pmm_total_bytes(void) { return total_frames * PMM_PAGE_SIZE; }

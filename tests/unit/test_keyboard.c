@@ -46,10 +46,26 @@ TEST(keyboard_ring_buffer_wraps) {
   TEST_PASS_MSG();
 }
 
+TEST(keyboard_decodes_arrow_keys) {
+  keyboard_reset_state();
+  keyboard_process_scancode(0xE0);
+  keyboard_process_scancode(0x48);
+  keyboard_process_scancode(0xE0);
+  keyboard_process_scancode(0x50);
+
+  input_event_t up = keyboard_getevent();
+  input_event_t down = keyboard_getevent();
+
+  ASSERT_EQ(up.type, INPUT_EVENT_UP);
+  ASSERT_EQ(down.type, INPUT_EVENT_DOWN);
+  TEST_PASS_MSG();
+}
+
 int main(void) {
   printf("\nKeyboard Tests:\n");
   RUN_TEST(keyboard_translates_shifted_letters);
   RUN_TEST(keyboard_ignores_key_releases);
   RUN_TEST(keyboard_ring_buffer_wraps);
+  RUN_TEST(keyboard_decodes_arrow_keys);
   TEST_SUMMARY();
 }

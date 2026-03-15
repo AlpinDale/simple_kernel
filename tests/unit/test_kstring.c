@@ -21,10 +21,25 @@ TEST(ku64_to_hex_formats_values) {
   TEST_PASS_MSG();
 }
 
+TEST(ku64_parse_accepts_decimal) {
+  u64 value = 0;
+  ASSERT_TRUE(ku64_parse("4096", &value));
+  ASSERT_EQ(value, 4096);
+  TEST_PASS_MSG();
+}
+
+TEST(ku64_parse_rejects_invalid_text) {
+  u64 value = 0;
+  ASSERT_FALSE(ku64_parse("4k", &value));
+  TEST_PASS_MSG();
+}
+
 int main(void) {
   printf("\nKString Tests:\n");
   RUN_TEST(kstrcmp_matches_exactly);
   RUN_TEST(kmemmove_handles_overlap);
   RUN_TEST(ku64_to_hex_formats_values);
+  RUN_TEST(ku64_parse_accepts_decimal);
+  RUN_TEST(ku64_parse_rejects_invalid_text);
   TEST_SUMMARY();
 }
